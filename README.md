@@ -1,85 +1,97 @@
 Description
-The Visualizer microservice generates graphical representations (Pie Charts or Bar Graphs) of spending data. It helps users visually identify which categories consume the most budget.
+The Visualizer microservice provides graphical representations of spending data to help budget-conscious users identify which categories consume the most money. It processes a list of expenses and categories to return a high-resolution chart.
+
 
 Communication Contract
 1. How to Programmatically REQUEST Data
-To request a chart, send a POST request to the /visualize endpoint. The body of the request must be in JSON format.
-Endpoint: http://localhost:5000/visualize
-Method: POST
-Request Parameters:
+To generate a chart, send a POST request to the /visualize endpoint. The request must include the following JSON parameters:
+
 Parameter
 Type
 Description
-type
-String
-The style of chart: "pie" or "bar".
-data
+spending_data
 Array
-List of objects containing cat (Category Name), amt (Amount), and date (YYYY-MM-DD).
+Objects containing cat (category), amt (amount), and date (YYYY-MM-DD).
++1
+chart_type
+String
+The desired chart style (e.g., "pie" or "bar").
++2
 date_range
 Object
-Contains start_date and end_date (YYYY-MM-DD) to filter results.
+Includes start_date and end_date to filter data.
++1
 
-Example Python Call:
+Example Call (Python):
 Python
 import requests
 
+
 url = "http://localhost:5000/visualize"
 payload = {
-    "type": "pie",
-    "data": [
+    "chart_type": "pie",
+    "spending_data": [
         {"cat": "Rent", "amt": 1200, "date": "2024-01-01"},
         {"cat": "Food", "amt": 400, "date": "2024-01-05"}
     ],
     "date_range": {"start_date": "2024-01-01", "end_date": "2024-01-31"}
 }
 response = requests.post(url, json=payload)
-print(response.json())
 
 
 2. How to Programmatically RECEIVE Data
-The microservice processes the data and returns a JSON response with a status and a link to the generated image.
-Example Success Response:
+The microservice returns a JSON response containing a public URL to the generated image.
+Success Response:
 JSON
 {
   "status": "success",
-  "chart_url": "http://localhost:5000/static/charts/chart_abc123.png"
+  "chart_url": "http://localhost:5000/static/charts/chart_882.png"
 }
 
-Example Error Response:
-(Occurs if the date range provided results in no data found)
-JSON
-{
-  "status": "error",
-  "message": "No data found for the given date range"
-}
+Error Handling: If the provided date range contains no data, the service returns a JSON error message instead of a broken image to ensure system reliability.
+
 3. UML Sequence Diagram
-This diagram shows the interaction between the Main Program and the Visualizer Microservice.
-Code snippet
-    sequenceDiagram
-    participant Client as Main Program (Test Script)
-    participant API as Visualizer Microservice
-    
-    Note over Client, API: Request Phase
-    Client->>API: POST /visualize (JSON Payload)
-    
-    Note over API: Processing Phase
-    API->>API: Filter data by date_range
-    alt Data Exists
-        API->>API: Generate Image (1080p optimized)
-        API-->>Client: 200 OK (JSON with chart_url)
-    else No Data Found
-        API-->>Client: 400 Bad Request (JSON Error Message)
-    end
-    
-    Note over Client: Client displays image from URL
+The following sequence diagram illustrates the programmatic request and receive flow.
+Plaintext
+Main Program (Test Script)       Visualizer API              Image Processing
+          |                              |                           |
+          |  POST /visualize             |                           |
+          |  (JSON Data & Dates)         |                           |
+          |----------------------------->|                           |
+          |                              |                           |
+          |                              | Filter Data by Date       |
+          |                              |-------------------------->|
+          |                              |                           |
+          |                              | Generate Chart (1080p)    |
+          |                              |-------------------------->|
+          |                              |                           |
+          |                              |             Analyze Data  |
+          |                              |             Render Image  |
+          |                              |             Save to File  |
+          |                              |<--------------------------|
+          |                              | Return Image URL          |
+          |                              |                           |
+          |      Build JSON response     |                           |
+          |<-----------------------------|                           |
+          |  {"status":"success",        |                           |
+          |   "chart_url":"..."}         |                           |
+          |                              |                           |
+
 
 Acceptance Criteria (Sprint 2 Plan)
-Usability: Charts are generated in 10x6 inch format, optimized for 1080p readability.
-Reliability: The service validates date ranges and prevents crashes if data is missing.
-Performance: Average response time is under 500ms for standard datasets.
-How to Run locally
-Install dependencies: pip install flask matplotlib
-Run the service: python app.py
-Use the test_microservice.py script to verify the connection.
+Usability: Charts are clearly labeled and optimized for 1080p monitors.
+
+
+Reliability: Returns an error message if the date range contains no data.
+
+
+Performance: Returns the visualization within 500ms for datasets under 1000 entries.
+
+
+
+How to Run Locally
+Install Dependencies: pip install flask matplotlib
+Start Service: python app.py
+Run Test Script: python test_microservice.py
+
 
